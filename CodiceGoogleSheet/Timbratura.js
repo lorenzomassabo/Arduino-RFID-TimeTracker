@@ -1,3 +1,5 @@
+//registrazione dipendenti nel database e registrazione orario ingresso / uscita
+
 function doPost(e) {
   var params = JSON.parse(e.postData.contents);
   var action = params.action;
@@ -24,7 +26,7 @@ function doPost(e) {
     var nome = params.nome;
     var cognome = params.cognome;
     var azione = params.azione;
-    
+
     // Genera timestamp completo
     var timestamp = Utilities.formatDate(new Date(), "GMT+1", "yyyy-MM-dd HH:mm:ss");
 
