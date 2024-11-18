@@ -1,3 +1,5 @@
+//Il codice incorpora sia il registrazione dei dipendenti nel database sia il timbro di entrata/uscita 
+
 function doPost(e) {
   var params = JSON.parse(e.postData.contents);
   var action = params.action;
