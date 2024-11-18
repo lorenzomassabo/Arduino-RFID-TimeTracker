@@ -1,115 +1,90 @@
-//Registrazione Badge
-
+//registrazione badge e invio dati su google sheet
 #include <SPI.h>
 #include <MFRC522.h>
-#include <EEPROM.h>
+#include <WiFiNINA.h>
+#include <ArduinoHttpClient.h>
 
 #define SS_PIN 10      // Pin SS del modulo RFID
 #define RST_PIN 9      // Pin RST del modulo RFID
 
+// Wi-Fi
+const char* ssid = "Tuo_SSID";         // Rete Wi-Fi
+const char* password = "Tua_Password"; // Password Wi-Fi
+
+// Webhook Google Apps Script
+const char* server = "script.google.com";
+const String webhookPath = "/macros/s/TUO_WEBHOOK_ID/exec"; // Sostituisci con il tuo webhook
+
 // Inizializzazione RFID
 MFRC522 mfrc522(SS_PIN, RST_PIN);
 
-// Struttura per i dati dei dipendenti
-struct Dipendente {
-  char rfid[12];
-  char nome[20];
-  char cognome[20];
-};
-
-// Numero massimo di dipendenti
-const int MAX_DIPENDENTI = 10;
-Dipendente dipendenti[MAX_DIPENDENTI];
-
-// Funzioni
-void registraDipendente(String rfid, String nome, String cognome);
-void caricaDipendenti();
-void salvaDipendenti();
+// Client HTTP
+WiFiClient wifiClient;
+HttpClient client = HttpClient(wifiClient, server, 443);
 
 void setup() {
-  // Configurazione Serial
   Serial.begin(9600);
   while (!Serial);
+
+  // Inizializzazione Wi-Fi
+  Serial.print("Connettendo a Wi-Fi");
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    Serial.print(".");
+    delay(1000);
+  }
+  Serial.println("\nConnesso al Wi-Fi!");
 
   // Inizializzazione RFID
   SPI.begin();
   mfrc522.PCD_Init();
-
-  // Carica i dipendenti dalla EEPROM
-  caricaDipendenti();
-
-  // Messaggio di avvio
-  Serial.println("Modalità registrazione dipendenti.");
-  Serial.println("Digita 'registra' per aggiungere un nuovo badge.");
+  Serial.println("Sistema pronto. Avvicina un badge per registrarlo.");
 }
 
 void loop() {
-  // Controlla comandi da seriale
-  if (Serial.available()) {
-    String comando = Serial.readStringUntil('\n');
-    comando.trim();
-
-    if (comando == "registra") {
-      Serial.println("Modalità registrazione attivata. Avvicina un badge RFID.");
-      while (!mfrc522.PICC_IsNewCardPresent() || !mfrc522.PICC_ReadCardSerial()) {
-        delay(50);
-      }
-
-      // Ottieni UID del badge
-      String rfid_uid = "";
-      for (byte i = 0; i < mfrc522.uid.size; i++) {
-        rfid_uid += String(mfrc522.uid.uidByte[i], HEX);
-      }
-      Serial.println("Badge rilevato. UID: " + rfid_uid);
-
-      // Richiedi nome e cognome via seriale
-      Serial.println("Inserisci il nome del dipendente:");
-      while (!Serial.available());
-      String nome = Serial.readStringUntil('\n');
-      nome.trim();
-
-      Serial.println("Inserisci il cognome del dipendente:");
-      while (!Serial.available());
-      String cognome = Serial.readStringUntil('\n');
-      cognome.trim();
-
-      // Registra il nuovo dipendente
-      registraDipendente(rfid_uid, nome, cognome);
-      Serial.println("Dipendente registrato con successo!");
-    }
+  // Controlla se un badge RFID è stato avvicinato
+  if (!mfrc522.PICC_IsNewCardPresent() || !mfrc522.PICC_ReadCardSerial()) {
+    delay(50);
+    return;
   }
-}
 
-// Funzione per registrare un nuovo dipendente
-void registraDipendente(String rfid, String nome, String cognome) {
-  for (int i = 0; i < MAX_DIPENDENTI; i++) {
-    if (strlen(dipendenti[i].rfid) == 0) { // Trova il primo slot libero
-      strncpy(dipendenti[i].rfid, rfid.c_str(), sizeof(dipendenti[i].rfid));
-      strncpy(dipendenti[i].nome, nome.c_str(), sizeof(dipendenti[i].nome));
-      strncpy(dipendenti[i].cognome, cognome.c_str(), sizeof(dipendenti[i].cognome));
-      salvaDipendenti();
-      Serial.println("Nuovo dipendente aggiunto:");
-      Serial.println("RFID: " + rfid);
-      Serial.println("Nome: " + nome);
-      Serial.println("Cognome: " + cognome);
-      return;
-    }
+  // Ottieni UID del badge
+  String rfid_uid = "";
+  for (byte i = 0; i < mfrc522.uid.size; i++) {
+    rfid_uid += String(mfrc522.uid.uidByte[i], HEX);
   }
-  Serial.println("Errore: Database dipendenti pieno!");
-}
+  Serial.println("Badge rilevato. UID: " + rfid_uid);
 
-// Funzione per caricare i dipendenti dalla EEPROM
-void caricaDipendenti() {
-  for (int i = 0; i < MAX_DIPENDENTI; i++) {
-    EEPROM.get(i * sizeof(Dipendente), dipendenti[i]);
-  }
-  Serial.println("Database dipendenti caricato.");
-}
+  // Richiedi nome e cognome tramite seriale
+  Serial.println("Inserisci il nome del dipendente:");
+  while (!Serial.available());
+  String nome = Serial.readStringUntil('\n');
+  nome.trim();
 
-// Funzione per salvare i dipendenti nella EEPROM
-void salvaDipendenti() {
-  for (int i = 0; i < MAX_DIPENDENTI; i++) {
-    EEPROM.put(i * sizeof(Dipendente), dipendenti[i]);
+  Serial.println("Inserisci il cognome del dipendente:");
+  while (!Serial.available());
+  String cognome = Serial.readStringUntil('\n');
+  cognome.trim();
+
+  // Invia i dati al webhook
+  String jsonPayload = "{\"action\":\"registra_dipendente\",\"uid\":\"" + rfid_uid + "\",\"nome\":\"" + nome + "\",\"cognome\":\"" + cognome + "\"}";
+
+  Serial.println("Invio dati a Google Sheets...");
+  client.beginRequest();
+  client.post(webhookPath);
+  client.sendHeader("Content-Type", "application/json");
+  client.sendHeader("Content-Length", jsonPayload.length());
+  client.beginBody();
+  client.print(jsonPayload);
+  client.endRequest();
+
+  // Leggi la risposta
+  int statusCode = client.responseStatusCode();
+  String response = client.responseBody();
+
+  if (statusCode == 200) {
+    Serial.println("Dipendente registrato con successo: " + response);
+  } else {
+    Serial.println("Errore nell'invio: " + String(statusCode));
   }
-  Serial.println("Database dipendenti salvato.");
 }
