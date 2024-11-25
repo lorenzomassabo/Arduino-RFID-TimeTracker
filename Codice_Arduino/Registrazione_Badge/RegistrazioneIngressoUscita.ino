@@ -12,7 +12,7 @@ const char* password = "Tua_Password"; // Password Wi-Fi
 
 // Webhook Google Apps Script
 const char* server = "script.google.com";
-const String webhookPath = "/macros/s/TUO_WEBHOOK_ID/exec"; // Sostituisci con il tuo webhook
+const String webhookPath = "/macros/nattadeambrosis.org/s/AKfycby8X3yE1WN-P1NvqJOplsmw99TzWUUtbswk9pOyMagFUbrCI5FEtdMx5mNti-4OfVTE-A/exec"; // Sostituisci con il tuo webhook
 
 // Inizializzazione RFID
 MFRC522 mfrc522(SS_PIN, RST_PIN);
