@@ -1,4 +1,4 @@
-//registrazione badge e invio dati su google sheet
+//registrazione badge e invio dati su google sheet.
 #include <SPI.h>
 #include <MFRC522.h>
 #include <WiFiNINA.h>
