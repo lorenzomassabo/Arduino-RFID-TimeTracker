@@ -1,66 +1,41 @@
-//Il codice incorpora sia il registrazione dei dipendenti nel database sia il timbro di entrata/uscita 
-
 function doPost(e) {
-  var params = JSON.parse(e.postData.contents);
-  var action = params.action;
+  const spreadsheetId = "1BCUp1cmFtbtCJ6V-1f9nsqFZtHscArd3-HlKFhnyYP0";  // Sostituisci con l'ID del tuo foglio
+  const ss = SpreadsheetApp.openById(spreadsheetId);
+  const foglioDipendenti = ss.getSheetByName("Dipendenti");
+  const foglioOrari = ss.getSheetByName("Orari");
 
-  // Apri il foglio di calcolo
-  var sheet = SpreadsheetApp.getActiveSpreadsheet();
+  const dati = JSON.parse(e.postData.contents);
+  const azione = dati.azione; // "registra" o "registraOrario"
+  
+  if (azione === "registra") {
+    const badgeID = dati.badgeID;
+    const nomeCognome = dati.nomeCognome;
 
-  if (action === "registra_dipendente") {
-    // **Registrazione Dipendente**
-    var uid = params.uid;
-    var nome = params.nome;
-    var cognome = params.cognome;
-
-    // Verifica se UID esiste già nella scheda "Lista Dipendenti"
-    var dipendentiSheet = sheet.getSheetByName("Lista Dipendenti");
-    var data = dipendentiSheet.getDataRange().getValues();
-
-    for (var i = 1; i < data.length; i++) {
-      if (data[i][0] == uid) {
-        return ContentService.createTextOutput("Errore: UID già registrato.");
+    // Verifica se il badge esiste già
+    const righe = foglioDipendenti.getDataRange().getValues();
+    for (let i = 1; i < righe.length; i++) {
+      if (righe[i][0] === badgeID) {
+        return ContentService.createTextOutput("Badge già registrato").setMimeType(ContentService.MimeType.TEXT);
       }
     }
 
-    // Aggiungi il dipendente alla scheda "Lista Dipendenti"
-    dipendentiSheet.appendRow([uid, nome, cognome]);
+    // Aggiungi il nuovo dipendente
+    foglioDipendenti.appendRow([badgeID, nomeCognome.split(" ")[0], nomeCognome.split(" ")[1]]);
+    return ContentService.createTextOutput("Dipendente registrato").setMimeType(ContentService.MimeType.TEXT);
 
-    return ContentService.createTextOutput("Dipendente registrato con successo.");
+  } else if (azione === "registraOrario") {
+    const badgeID = dati.badgeID;
+    const tipo = dati.tipo;
+    const nomeCognome = dati.nomeCognome; // Aggiungi il nome completo
+
+    const data = new Date();
+    const dataFormattata = Utilities.formatDate(data, Session.getScriptTimeZone(), "yyyy-MM-dd");
+    const oraFormattata = Utilities.formatDate(data, Session.getScriptTimeZone(), "HH:mm:ss");
+
+    // Aggiungi al foglio Orari anche il nome e cognome
+    foglioOrari.appendRow([dataFormattata, oraFormattata, badgeID, nomeCognome, tipo]);
+    return ContentService.createTextOutput("Orario registrato").setMimeType(ContentService.MimeType.TEXT);
   }
-
-  if (action === "registra_timbro") {
-    // **Registrazione Timbro**
-    var uid = params.uid;
-    var azione = params.azione;
-
-    // Trova nome e cognome del dipendente dalla scheda "Lista Dipendenti"
-    var dipendentiSheet = sheet.getSheetByName("Lista Dipendenti");
-    var data = dipendentiSheet.getDataRange().getValues();
-    var nome = "";
-    var cognome = "";
-
-    for (var i = 1; i < data.length; i++) {
-      if (data[i][0] == uid) {
-        nome = data[i][1];
-        cognome = data[i][2];
-        break;
-      }
-    }
-
-    if (nome === "" || cognome === "") {
-      return ContentService.createTextOutput("Errore: UID non trovato.");
-    }
-
-    // Genera timestamp
-    var timestamp = Utilities.formatDate(new Date(), "GMT+1", "yyyy-MM-dd HH:mm:ss");
-
-    // Aggiungi i dati alla scheda "Timbrature"
-    var timbratureSheet = sheet.getSheetByName("Timbrature");
-    timbratureSheet.appendRow([uid, nome, cognome, azione, timestamp]);
-
-    return ContentService.createTextOutput("Timbro registrato con successo.");
-  }
-
-  return ContentService.createTextOutput("Errore: Azione non riconosciuta.");
+  
+  return ContentService.createTextOutput("Azione non valida").setMimeType(ContentService.MimeType.TEXT);
 }
