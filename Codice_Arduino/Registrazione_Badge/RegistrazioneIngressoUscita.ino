@@ -3,7 +3,7 @@
 #include <WiFiNINA.h>
 #include <ArduinoJson.h>
 
-// Definisci le credenziali Wi-Fi
+// Definisci le credenziali Wi-Fi.
 const char* ssid = "SSID";
 const char* password = "PASSW";
 
