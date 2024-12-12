@@ -1,84 +1,147 @@
 #include <SPI.h>
 #include <MFRC522.h>
 #include <WiFiNINA.h>
-#include <ArduinoHttpClient.h>
+#include <ArduinoJson.h>
 
-#define SS_PIN 10      // Pin SS del modulo RFID
-#define RST_PIN 9      // Pin RST del modulo RFID
+// Definisci le credenziali Wi-Fi
+const char* ssid = "SSID";
+const char* password = "PASSW";
 
-// Wi-Fi
-const char* ssid = "Tuo_SSID";         // Nome della rete Wi-Fi
-const char* password = "Tua_Password"; // Password Wi-Fi
-
-// Webhook Google Apps Script
-const char* server = "script.google.com";
-const String webhookPath = "/macros/nattadeambrosis.org/s/AKfycby8X3yE1WN-P1NvqJOplsmw99TzWUUtbswk9pOyMagFUbrCI5FEtdMx5mNti-4OfVTE-A/exec"; // Sostituisci con il tuo webhook
-
-// Inizializzazione RFID
+// Pin RFID
+#define RST_PIN 9
+#define SS_PIN 10
 MFRC522 mfrc522(SS_PIN, RST_PIN);
 
-// Client HTTP
-WiFiClient wifiClient;
-HttpClient client = HttpClient(wifiClient, server, 443);
+// URL per inviare i dati a Google Sheets
+const char* googleScriptUrl = "script.google.com";  // Sostituisci con il tuo URL del Web App
+const int httpsPort = 443;
+
+// Array per tenere traccia dello stato (entrata/uscita) dei dipendenti
+String badgeIDs[16];   // Array per memorizzare fino a 10 ID di badge
+bool statoDipendenti[16]; // Array per tenere traccia dello stato di ingresso/uscita (true = ingresso, false = uscita)
+int numDipendenti = 1;  // Numero attuale di dipendenti registrati
+
+// Variabili per gestire i badge RFID
+String idBadge;
+String nomeDipendente;
+unsigned long lastRead = 0;
 
 void setup() {
+  // Avvia la comunicazione seriale
   Serial.begin(9600);
-  while (!Serial);
-
-  // Inizializzazione Wi-Fi
-  Serial.print("Connettendo a Wi-Fi");
+  // Connessione Wi-Fi
   WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
-    Serial.print(".");
     delay(1000);
+    Serial.println("Connessione WiFi in corso...");
   }
-  Serial.println("\nConnesso al Wi-Fi!");
+  Serial.println("WiFi connesso!");
 
-  // Inizializzazione RFID
+  // Inizializza il modulo RFID
   SPI.begin();
   mfrc522.PCD_Init();
-  Serial.println("Sistema pronto. Avvicina un badge per timbrare.");
+
+  Serial.println("Sistema di presenza pronto!");
 }
 
 void loop() {
-  // Controlla se un badge RFID è stato avvicinato
-  if (!mfrc522.PICC_IsNewCardPresent() || !mfrc522.PICC_ReadCardSerial()) {
-    delay(50);
-    return;
+  // Controlla se un tag RFID è stato letto
+  if (millis() - lastRead > 2000) {
+    if (mfrc522.PICC_IsNewCardPresent()) {
+      if (mfrc522.PICC_ReadCardSerial()) {
+        // Ottieni l'ID del badge
+        idBadge = "";
+        for (byte i = 0; i < mfrc522.uid.size; i++) {
+          idBadge += String(mfrc522.uid.uidByte[i], HEX);
+        }
+        idBadge.toUpperCase();
+        
+        // Aggiungi logica per associare l'ID del badge a un nome
+        nomeDipendente = getNomeDipendente(idBadge);
+
+        if (nomeDipendente != "") {
+          Serial.print("Dipendente: ");
+          Serial.println(nomeDipendente);
+
+          // Trova l'indice dell'ID del badge nell'array badgeIDs
+          int index = findBadgeIndex(idBadge);
+          if (index == -1) {
+            // Se il badge non è stato registrato, lo registriamo
+            if (numDipendenti < 10) {
+              badgeIDs[numDipendenti] = idBadge;
+              statoDipendenti[numDipendenti] = true;  // Ingresso
+              numDipendenti++;
+            }
+            // Registra l'ingresso
+            registraPresenza(nomeDipendente, idBadge, "ingresso");
+          } else {
+            // Se il badge è stato già registrato, controlliamo lo stato
+            String tipo = (statoDipendenti[index]) ? "uscita" : "ingresso";
+            // Registra l'uscita o ingresso
+            registraPresenza(nomeDipendente, idBadge, tipo);
+            // Cambia lo stato del dipendente
+            statoDipendenti[index] = !statoDipendenti[index];
+          }
+        } else {
+          Serial.println("Badge non riconosciuto.");
+        }
+        
+        mfrc522.PICC_HaltA();
+      }
+    }
   }
+}
 
-  // Ottieni UID del badge
-  String rfid_uid = "";
-  for (byte i = 0; i < mfrc522.uid.size; i++) {
-    rfid_uid += String(mfrc522.uid.uidByte[i], HEX);
+String getNomeDipendente(String id) {
+  // Esegui il mapping tra ID e nome (puoi sostituire questa logica con un array o un altro metodo)
+  if (id == "5A5D0A3") return "Lorenzo Massabò";
+  // Aggiungi altri ID qui
+  return "";
+}
+
+// Funzione per trovare l'indice di un badgeID nell'array
+int findBadgeIndex(String badgeID) {
+  for (int i = 0; i < numDipendenti; i++) {
+    if (badgeIDs[i] == badgeID) {
+      return i;  // Restituisce l'indice del badge trovato
+    }
   }
-  Serial.println("Badge rilevato. UID: " + rfid_uid);
+  return -1;  // Restituisce -1 se il badge non è trovato
+}
 
-  // Determina l'azione (Ingresso/Uscita)
-  Serial.println("Inserisci azione (Ingresso/Uscita):");
-  while (!Serial.available());
-  String azione = Serial.readStringUntil('\n');
-  azione.trim();
+void registraPresenza(String nome, String badgeID, String tipo) {
+  // Prepara i dati da inviare come JSON
+  String data = "{\"azione\":\"registraOrario\",\"badgeID\":\"" + badgeID + "\",\"tipo\":\"" + tipo + "\",\"nomeCognome\":\"" + nome + "\"}";
 
-  // Invia i dati al webhook
-  String jsonPayload = "{\"action\":\"registra_timbro\",\"uid\":\"" + rfid_uid + "\",\"azione\":\"" + azione + "\"}";
+  // Crea una connessione SSL con il server usando WiFiClient
+  WiFiClient client;
+  
+  // Connetti al server usando SSL
+  if (client.connectSSL(googleScriptUrl, httpsPort)) {
+    Serial.println("Connessione SSL riuscita!");
 
-  Serial.println("Invio dati a Google Sheets...");
-  client.beginRequest();
-  client.post(webhookPath);
-  client.sendHeader("Content-Type", "application/json");
-  client.sendHeader("Content-Length", jsonPayload.length());
-  client.beginBody();
-  client.print(jsonPayload);
-  client.endRequest();
+    // Crea una richiesta POST
+    String postRequest = "POST /macros/s/AKfycbxsywjz2Nsl9ItJldMhc9owjhwO2z4xz4ZHI8U5HLnshwXhX6CloWTx6GnswVyCeHEOGg/exec HTTP/1.1\r\n";  // Sostituisci con il tuo ID
+    postRequest += "Host: " + String(googleScriptUrl) + "\r\n";
+    postRequest += "Content-Type: application/json\r\n";
+    postRequest += "Content-Length: " + String(data.length()) + "\r\n";
+    postRequest += "Connection: close\r\n\r\n";
+    postRequest += data; // I dati JSON da inviare
 
-  // Leggi la risposta
-  int statusCode = client.responseStatusCode();
-  String response = client.responseBody();
+    // Invia la richiesta
+    client.print(postRequest);
+    Serial.println("Dati inviati:");
 
-  if (statusCode == 200) {
-    Serial.println("Timbro registrato con successo: " + response);
+    // Leggi la risposta
+    String response = "";
+    while (client.available()) {
+      response = client.readStringUntil('\r');
+      Serial.print(response);
+    }
+
+    Serial.println("\nRisposta ricevuta!");
+    client.stop();  // Chiudi la connessione SSL
   } else {
-    Serial.println("Errore nell'invio: " + String(statusCode));
+    Serial.println("Connessione SSL fallita");
   }
 }
