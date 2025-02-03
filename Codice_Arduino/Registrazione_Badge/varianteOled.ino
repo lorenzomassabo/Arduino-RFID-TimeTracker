@@ -7,8 +7,8 @@
 #include <Adafruit_SSD1306.h>
 
 // Definisci le credenziali Wi-Fi.
-const char* ssid = "SSID";
-const char* password = "PASSWD";
+const char* ssid = "ssid";
+const char* password = "passwd";
 
 // Pin RFID
 #define RST_PIN 9
@@ -144,8 +144,22 @@ void loop() {
 
 String getNomeDipendente(String id) {
   // Esegui il mapping tra ID e nome (puoi sostituire questa logica con un array o un altro metodo)
-  if (id == "5A5D0A3") return "Lorenzo Massabo";
-  // Aggiungi altri ID qui
+  if (id == "5A5D0A3") return "Lorenzo Massabò";
+  if (id == "5AC6A860") return "Matteo Puggioni";
+  if (id == "DA28DDA2") return "Pietro Gardella";
+  if (id == "AA65D5A2") return "Pietro Campodonico";
+  if (id == "6AC7DEA2") return "Alexandru Doina";
+  if (id == "5ABEFFA2") return "Alexander Flores";
+  if (id == "DA33FCA2") return "Aleksandro Lamaj";
+  if (id == "4AFDA560") return "Estefano Correa";
+  if (id == "3AA5DEA2") return "Diego Carbone";
+  if (id == "DA34A060") return "Nicolò Mula";
+  if (id == "5AE8A860") return "Simone Cervini";
+  if (id == "39A4BFA") return "Valentino Lela";
+  if (id == "3AADFDA2") return "Gioele Spanò";
+  if (id == "3A61D3A2") return "Veronica Rossi";
+  if (id == "11AD7B") return "Artem Chirkov";
+  if (id == "9A52E1A2") return "Tiziano Agosti";
   return "";
 }
 
