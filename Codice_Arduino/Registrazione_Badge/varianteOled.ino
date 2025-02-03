@@ -7,8 +7,8 @@
 #include <Adafruit_SSD1306.h>
 
 // Definisci le credenziali Wi-Fi.
-const char* ssid = "ssid";
-const char* password = "passwd";
+const char* ssid = "Arduinooh";
+const char* password = "Massabo1";
 
 // Pin RFID
 #define RST_PIN 9
@@ -28,7 +28,7 @@ const int httpsPort = 443;
 // Array per tenere traccia dello stato (entrata/uscita) dei dipendenti
 String badgeIDs[16];   // Array per memorizzare fino a 10 ID di badge
 bool statoDipendenti[16]; // Array per tenere traccia dello stato di ingresso/uscita (true = ingresso, false = uscita)
-int numDipendenti = 1;  // Numero attuale di dipendenti registrati
+int numDipendenti = 16;  // Numero attuale di dipendenti registrati
 
 // Variabili per gestire i badge RFID
 String idBadge;
@@ -76,9 +76,9 @@ void setup() {
   display.clearDisplay();
   display.setTextSize(2); // Dimensione del testo normale per "Ingresso" o "Uscita"
   display.setCursor(20,0);
-  display.println("Sistema");
+  display.println("SISTEMA");
   display.setCursor(20,20);
-  display.println("pronto!");
+  display.println("PRONTO!");
   display.display();
   Serial.println("Sistema di presenza pronto!");
 }
@@ -129,10 +129,23 @@ void loop() {
             statoDipendenti[index] = !statoDipendenti[index];
           }
         } else {
+            display.setTextSize(1); // Dimensione del testo normale per "Ingresso" o "Uscita"
           Serial.println("Badge non riconosciuto.");
           display.clearDisplay();
+          display.setCursor(50,20);
+          display.println("BADGE");
+          display.display();
+          display.setCursor(15,30);
+
+          display.println("NON RICONOSCIUTO.");
+          display.display();
+          delay(2000); // Mantiene la scritta per 2 secondi
+          display.clearDisplay();
+          display.setTextSize(2); // Dimensione del testo normale per "Ingresso" o "Uscita"
           display.setCursor(20,0);
-          display.println("Badge non riconosciuto.");
+          display.println("SISTEMA");
+          display.setCursor(20,20);
+          display.println("PRONTO!");
           display.display();
         }
         
@@ -219,21 +232,29 @@ void registraPresenza(String nome, String badgeID, String tipo) {
     display.println(tipo); // Mostra "ingresso" o "uscita"
     display.display();
     delay(2000); // Mantiene la scritta per 2 secondi
-  display.clearDisplay();
-  display.setTextSize(2); // Dimensione del testo normale per "Ingresso" o "Uscita"
-  display.setCursor(20,0);
-  display.println("Sistema");
-  display.setCursor(20,20);
-  display.println("pronto!");
-  display.display();
+    display.clearDisplay();
+    display.setTextSize(2); // Dimensione del testo normale per "Ingresso" o "Uscita"
+    display.setCursor(20,0);
+    display.println("SISTEMA");
+    display.setCursor(20,20);
+    display.println("PRONTO!");
+    display.display();
     client.stop();  // Chiudi la connessione SSL
   } else {
     Serial.println("Connessione SSL fallita");
     display.clearDisplay();
+    display.setCursor(20,20);
+    display.println("CONNESSIONE SSL");  
+    display.setCursor(45,30); 
+    display.println("FALLITA");
+    display.display();
+    delay(2000); // Mantiene la scritta per 2 secondi
+    display.clearDisplay();
+    display.setTextSize(2); // Dimensione del testo normale per "Ingresso" o "Uscita"
     display.setCursor(20,0);
-    display.println("Connessione SSL fallita");   
-    display.setCursor(20,20); 
-    display.println("fallita");
+    display.println("SISTEMA");
+    display.setCursor(20,20);
+    display.println("PRONTO!");
     display.display();
   }
 }
