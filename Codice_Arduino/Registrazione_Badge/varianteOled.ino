@@ -26,13 +26,13 @@ const char* googleScriptUrl = "script.google.com";  // Sostituisci con il tuo UR
 const int httpsPort = 443;
 
 // Array per tenere traccia dello stato (entrata/uscita) dei dipendenti
-char badgeIDs[16][20];   // Array per memorizzare fino a 10 ID di badge
+String badgeIDs[16];   // Array per memorizzare fino a 10 ID di badge
 bool statoDipendenti[16]; // Array per tenere traccia dello stato di ingresso/uscita (true = ingresso, false = uscita)
 int numDipendenti = 1;  // Numero attuale di dipendenti registrati
 
 // Variabili per gestire i badge RFID
-char idBadge[20]; // Array per l'ID del badge
-char nomeDipendente[30]; // Array per il nome del dipendente
+String idBadge;
+String nomeDipendente;
 unsigned long lastRead = 0;
 
 // Funzione per disegnare l'icona del Wi-Fi
@@ -89,18 +89,23 @@ void loop() {
     if (mfrc522.PICC_IsNewCardPresent()) {
       if (mfrc522.PICC_ReadCardSerial()) {
         // Ottieni l'ID del badge
-        snprintf(idBadge, sizeof(idBadge), "%02X%02X%02X%02X",
-                 mfrc522.uid.uidByte[0], mfrc522.uid.uidByte[1],
-                 mfrc522.uid.uidByte[2], mfrc522.uid.uidByte[3]);
-
+        idBadge = "";
+        for (byte i = 0; i < mfrc522.uid.size; i++) {
+          idBadge += String(mfrc522.uid.uidByte[i], HEX);
+        }
+        idBadge.toUpperCase();
+        
         // Aggiungi logica per associare l'ID del badge a un nome
-        if (getNomeDipendente(idBadge, nomeDipendente)) {
+        nomeDipendente = getNomeDipendente(idBadge);
+
+        if (nomeDipendente != "") {
+          display.setTextSize(1);
           Serial.print("Dipendente: ");
           Serial.println(nomeDipendente);
           display.clearDisplay();
-          display.setCursor(25, 20);
+          display.setCursor(25,20);
           display.println("Dipendente:");
-          display.setCursor(20, 30);
+          display.setCursor(20,30);
           display.println(nomeDipendente);
           display.display();
 
@@ -108,8 +113,8 @@ void loop() {
           int index = findBadgeIndex(idBadge);
           if (index == -1) {
             // Se il badge non è stato registrato, lo registriamo
-            if (numDipendenti < 16) {
-              strncpy(badgeIDs[numDipendenti], idBadge, sizeof(idBadge));
+            if (numDipendenti < 10) {
+              badgeIDs[numDipendenti] = idBadge;
               statoDipendenti[numDipendenti] = true;  // Ingresso
               numDipendenti++;
             }
@@ -117,7 +122,7 @@ void loop() {
             registraPresenza(nomeDipendente, idBadge, "ingresso");
           } else {
             // Se il badge è stato già registrato, controlliamo lo stato
-            const char* tipo = (statoDipendenti[index]) ? "uscita" : "ingresso";
+            String tipo = (statoDipendenti[index]) ? "uscita" : "ingresso";
             // Registra l'uscita o ingresso
             registraPresenza(nomeDipendente, idBadge, tipo);
             // Cambia lo stato del dipendente
@@ -126,41 +131,37 @@ void loop() {
         } else {
           Serial.println("Badge non riconosciuto.");
           display.clearDisplay();
-          display.setCursor(20, 0);
+          display.setCursor(20,0);
           display.println("Badge non riconosciuto.");
           display.display();
         }
-
+        
         mfrc522.PICC_HaltA();
-        mfrc522.PCD_StopCrypto1(); // Ferma la crittografia
-        lastRead = millis();
       }
     }
   }
 }
-bool getNomeDipendente(char* id, char* nome) {
+
+String getNomeDipendente(String id) {
   // Esegui il mapping tra ID e nome (puoi sostituire questa logica con un array o un altro metodo)
-  if (strcmp(id, "5A5D0A3") == 0) {
-    strcpy(nome, "Lorenzo Massabo");
-    return true;
-  }
+  if (id == "5A5D0A3") return "Lorenzo Massabo";
   // Aggiungi altri ID qui
-  return false;
+  return "";
 }
 
 // Funzione per trovare l'indice di un badgeID nell'array
-int findBadgeIndex(char* badgeID) {
+int findBadgeIndex(String badgeID) {
   for (int i = 0; i < numDipendenti; i++) {
-    if (strcmp(badgeIDs[i], badgeID) == 0) {
+    if (badgeIDs[i] == badgeID) {
       return i;  // Restituisce l'indice del badge trovato
     }
   }
   return -1;  // Restituisce -1 se il badge non è trovato
 }
 
-void registraPresenza(char* nome, char* badgeID, const char* tipo) {
+void registraPresenza(String nome, String badgeID, String tipo) {
   // Prepara i dati da inviare come JSON
-  String data = "{\"azione\":\"registraOrario\",\"badgeID\":\"" + String(badgeID) + "\",\"tipo\":\"" + String(tipo) + "\",\"nomeCognome\":\"" + String(nome) + "\"}";
+  String data = "{\"azione\":\"registraOrario\",\"badgeID\":\"" + badgeID + "\",\"tipo\":\"" + tipo + "\",\"nomeCognome\":\"" + nome + "\"}";
 
   // Crea una connessione SSL con il server usando WiFiClient
   WiFiClient client;
@@ -204,16 +205,14 @@ void registraPresenza(char* nome, char* badgeID, const char* tipo) {
     display.println(tipo); // Mostra "ingresso" o "uscita"
     display.display();
     delay(2000); // Mantiene la scritta per 2 secondi
+  display.clearDisplay();
+  display.setTextSize(2); // Dimensione del testo normale per "Ingresso" o "Uscita"
+  display.setCursor(20,0);
+  display.println("Sistema");
+  display.setCursor(20,20);
+  display.println("pronto!");
+  display.display();
     client.stop();  // Chiudi la connessione SSL
-
-    display.clearDisplay();
-    display.setTextSize(2); // Dimensione del testo
-    display.setCursor(20,0);
-    display.println("Sistema");
-    display.setCursor(20,20);
-    display.println("pronto!");
-    display.display();
-
   } else {
     Serial.println("Connessione SSL fallita");
     display.clearDisplay();
@@ -221,14 +220,6 @@ void registraPresenza(char* nome, char* badgeID, const char* tipo) {
     display.println("Connessione SSL fallita");   
     display.setCursor(20,20); 
     display.println("fallita");
-    display.display();
-
-    display.clearDisplay();
-    display.setTextSize(2); // Dimensione del testo
-    display.setCursor(20,0);
-    display.println("Sistema");
-    display.setCursor(20,20);
-    display.println("pronto!");
     display.display();
   }
 }
