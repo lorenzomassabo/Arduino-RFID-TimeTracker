@@ -1,5 +1,5 @@
 function doPost(e) {
-  const spreadsheetId = "1BCUp1cmFtbtCJ6V-1f9nsqFZtHscArd3-HlKFhnyYP0";  // Sostituisci con l'ID del tuo foglio
+  const spreadsheetId = "ID_FOGLIO";  // Sostituisci con l'ID del tuo foglio
   const ss = SpreadsheetApp.openById(spreadsheetId);
   const foglioDipendenti = ss.getSheetByName("Dipendenti");
   const foglioOrari = ss.getSheetByName("Orari");
