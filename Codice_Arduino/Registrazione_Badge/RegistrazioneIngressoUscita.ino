@@ -13,7 +13,7 @@ const char* password = "PASSW";
 MFRC522 mfrc522(SS_PIN, RST_PIN);
 
 // URL per inviare i dati a Google Sheets
-const char* googleScriptUrl = "script.google.com";  // Sostituisci con il tuo URL del Web App
+const char* googleScriptUrl = "script.google.com";
 const int httpsPort = 443;
 
 // Array per tenere traccia dello stato (entrata/uscita) dei dipendenti
@@ -94,7 +94,7 @@ void loop() {
 
 String getNomeDipendente(String id) {
   // Esegui il mapping tra ID e nome (puoi sostituire questa logica con un array o un altro metodo)
-  if (id == "5A5D0A3") return "Lorenzo Massabò";
+  if (id == "NFC_ID") return "Nome Cognome";
   // Aggiungi altri ID qui
   return "";
 }
@@ -121,7 +121,7 @@ void registraPresenza(String nome, String badgeID, String tipo) {
     Serial.println("Connessione SSL riuscita!");
 
     // Crea una richiesta POST
-    String postRequest = "POST /macros/s/AKfycbxsywjz2Nsl9ItJldMhc9owjhwO2z4xz4ZHI8U5HLnshwXhX6CloWTx6GnswVyCeHEOGg/exec HTTP/1.1\r\n";  // Sostituisci con il tuo ID
+    String postRequest = "POST /macros/s/.................../exec HTTP/1.1\r\n";  // Sostituisci con il tuo ID
     postRequest += "Host: " + String(googleScriptUrl) + "\r\n";
     postRequest += "Content-Type: application/json\r\n";
     postRequest += "Content-Length: " + String(data.length()) + "\r\n";
