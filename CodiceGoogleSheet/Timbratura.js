@@ -1,8 +1,8 @@
 function doPost(e) {
   const spreadsheetId = "ID_FOGLIO";  // Sostituisci con l'ID del tuo foglio
   const ss = SpreadsheetApp.openById(spreadsheetId);
-  const foglioDipendenti = ss.getSheetByName("Dipendenti");
-  const foglioOrari = ss.getSheetByName("Orari");
+  const foglioDipendenti = ss.getSheetByName("Dipendenti"); // Nome pagina foglio
+  const foglioOrari = ss.getSheetByName("Orari"); // Nome pagina foglio
 
   const dati = JSON.parse(e.postData.contents);
   const azione = dati.azione; // "registra" o "registraOrario"
