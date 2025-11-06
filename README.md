@@ -1,5 +1,6 @@
 # MES 5G – Sistema di Timbratura con Arduino Nano 33 IoT
 
+## Progetto realizzato dagli Studenti della classe 5^G 2024/2025 Dell'Istituto Natta Deambrosis
 ## Descrizione del progetto
 Questo progetto realizza un sistema di timbratura per il controllo degli orari di presenza dei dipendenti.  
 Tramite un badge RFID ogni utente può registrare l’ingresso e l’uscita.  
