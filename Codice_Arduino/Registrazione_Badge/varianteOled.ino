@@ -7,8 +7,8 @@
 #include <Adafruit_SSD1306.h>
 
 // Definisci le credenziali Wi-Fi.
-const char* ssid = "Arduinooh";
-const char* password = "Massabo1";
+const char* ssid = "SSID";
+const char* password = "PASSWD";
 
 // Pin RFID
 #define RST_PIN 9
@@ -157,22 +157,9 @@ void loop() {
 
 String getNomeDipendente(String id) {
   // Esegui il mapping tra ID e nome (puoi sostituire questa logica con un array o un altro metodo)
-  if (id == "5A5D0A3") return "Lorenzo Massabò";
-  if (id == "5AC6A860") return "Matteo Puggioni";
-  if (id == "DA28DDA2") return "Pietro Gardella";
-  if (id == "AA65D5A2") return "Pietro Campodonico";
-  if (id == "6AC7DEA2") return "Alexandru Doina";
-  if (id == "5ABEFFA2") return "Alexander Flores";
-  if (id == "DA33FCA2") return "Aleksandro Lamaj";
-  if (id == "4AFDA560") return "Estefano Correa";
-  if (id == "3AA5DEA2") return "Diego Carbone";
-  if (id == "DA34A060") return "Nicolò Mula";
-  if (id == "5AE8A860") return "Simone Cervini";
-  if (id == "39A4BFA") return "Valentino Lela";
-  if (id == "3AADFDA2") return "Gioele Spanò";
-  if (id == "3A61D3A2") return "Veronica Rossi";
-  if (id == "11AD7B") return "Artem Chirkov";
-  if (id == "9A52E1A2") return "Tiziano Agosti";
+  if (id == "ID_NFC") return "Nome Cognome";
+  // .......
+  
   return "";
 }
 
@@ -202,12 +189,12 @@ void registraPresenza(String nome, String badgeID, String tipo) {
     display.display();
 
     // Crea una richiesta POST
-    String postRequest = "POST /macros/s/AKfycbxsywjz2Nsl9ItJldMhc9owjhwO2z4xz4ZHI8U5HLnshwXhX6CloWTx6GnswVyCeHEOGg/exec HTTP/1.1\r\n";  // Sostituisci con il tuo ID
+    String postRequest = "POST /macros/s/...................................../exec HTTP/1.1\r\n";  // Sostituisci con il tuo ID
     postRequest += "Host: " + String(googleScriptUrl) + "\r\n";
     postRequest += "Content-Type: application/json\r\n";
     postRequest += "Content-Length: " + String(data.length()) + "\r\n";
     postRequest += "Connection: close\r\n\r\n";
-    postRequest += data; // I dati JSON da inviare
+    postRequest += data;
 
     // Invia la richiesta
     client.print(postRequest);
