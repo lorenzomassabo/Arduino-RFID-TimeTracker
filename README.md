@@ -55,3 +55,6 @@ Esempio di payload:
   "stato": "ingresso",
   "nome_dispositivo": "MES01"
 }
+
+## Licenza
+Questo progetto è distribuito con licenza GNU GPL-3.0 — consulta il file LICENSE per i dettagli.
