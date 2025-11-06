@@ -1,5 +1,8 @@
 # MES 5G – Sistema di Timbratura con Arduino Nano 33 IoT
 
+## Licenza
+Questo progetto è distribuito con licenza GNU GPL-3.0 — consulta il file LICENSE per i dettagli.
+
 ## Progetto realizzato dagli Studenti della classe 5^G 2024/2025 Dell'Istituto Natta Deambrosis
 ## Descrizione del progetto
 Questo progetto realizza un sistema di timbratura per il controllo degli orari di presenza dei dipendenti.  
@@ -56,5 +59,3 @@ Esempio di payload:
   "nome_dispositivo": "MES01"
 }
 
-## Licenza
-Questo progetto è distribuito con licenza GNU GPL-3.0 — consulta il file LICENSE per i dettagli.
